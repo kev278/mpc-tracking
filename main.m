@@ -1,0 +1,93 @@
+clear; clc;
+%% 1) Define vehicle parameters
+lF  = 1.2;     % m (CG to front axle)
+lR  = 1.3;     % m (CG to rear axle)
+m   = 1500;    % kg
+Izz = 3000;    % kg * m^2
+Bf  = 11.275;  % /rad (front Pacejka 'B')
+Cf  = 1.5600;  % front Pacejka 'C'
+Df  = -0.3365; % front Pacejka 'D' (negative in your data)
+muF = 0.337;   % max friction coefficient (front)
+Br  = 18.631;  % /rad (rear Pacejka 'B')
+Cr  = 1.5600;  % rear Pacejka 'C'
+Dr  = -0.2477; % rear Pacejka 'D'
+muR = 0.248;   % max friction coefficient (rear)
+% Not from thesis
+h   = 0.1;     % m  (CG height, if needed for load transfer)
+g   = 9.81;    % m/s^2
+T_s = 0.1; % Sampling time (s)
+N = 10;    % MPC prediction horizon
+
+%% 2) Define the state x and input u
+
+% State vector x = [ p_cg_x; p_cg_y; psi; v_x; v_y; psi_dot ]
+%  Example: the car starts at the origin (0,0),
+%           heading 0 rad, traveling 10 m/s forward,
+%           no lateral velocity, no yaw rate.
+x = [ 0;   % p_cg_x
+      0;   % p_cg_y
+      10;   % psi
+      0;  % v_x
+      0;   % v_y
+      1 ]; % psi_dot
+
+% Control input u = [ delta; s_fx; s_rx ]
+%  Example: small steering angle, zero front & rear longitudinal slip
+u = [ 0.05;    % delta (rad)
+      0.5;    % s_fx (front longitudinal slip)
+      0.00 ];  % s_rx (rear  longitudinal slip)
+
+%% 3) Compute x_dot using a helper function
+x_dot = halfCarDynamics(x, u, ...
+                        lF, lR, m, Izz, ...
+                        Bf, Cf, Df, muF, ...
+                        Br, Cr, Dr, muR, ...
+                        g, h);
+
+% Display the result
+% disp('State derivative x_dot = ');
+% disp(x_dot);
+
+%% 4) Discretize using Euler method
+% f_discrete = @(x, u) x + T_s * halfCarDynamics(x, u, ...
+%                                                lF, lR, m, Izz, ...
+%                                                Bf, Cf, Df, muF, ...
+%                                                Br, Cr, Dr, muR, ...
+%                                                g, h);
+% 
+% % Simulate the discrete dynamics for a few steps
+% x_history = x; % Store state history
+% for k = 1:N
+%     x = f_discrete(x, u);
+%     x_history = [x_history, x]; %#ok<AGROW>
+% end
+% 
+% % Plot the trajectory
+% figure;
+% plot(x_history(1, :), x_history(2, :), '-o');
+% xlabel('p_cg_x'); ylabel('p_cg_y');
+% title('Vehicle Trajectory (Discrete Dynamics)');
+% grid on;
+
+%% 5) Discretize using Runge-Kutta (RK4) method
+f_continuous = @(x, u) halfCarDynamics(x, u, ...
+                                       lF, lR, m, Izz, ...
+                                       Bf, Cf, Df, muF, ...
+                                       Br, Cr, Dr, muR, ...
+                                       g, h);
+
+f_discrete = @(x, u, T_s) rk4_discretization(f_continuous, x, u, T_s);
+
+% Simulate the discrete dynamics for a few steps
+x_history = x; % Store state history
+for k = 1:N
+    x = f_discrete(x, u, T_s);
+    x_history = [x_history, x]; %#ok<AGROW>
+end
+
+% Plot the trajectory
+figure;
+plot(x_history(1, :), x_history(2, :), '-o');
+xlabel('p_cg_x'); ylabel('p_cg_y');
+title('Vehicle Trajectory (RK4 Discrete Dynamics)');
+grid on;
