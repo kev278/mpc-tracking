@@ -1,5 +1,5 @@
-function main_auto()
-    % main_auto
+function main()
+    % main
     % --------------------------------------------------------
     % Demonstrates closed-loop Nonlinear MPC on the half-car
     % model. We assume you have:
