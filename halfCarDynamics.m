@@ -13,7 +13,7 @@ function xdot = halfCarDynamics(x, u, ...
                                 lF, lR, m, Izz, ...
                                 Bf, Cf, Df, muF, ...
                                 Br, Cr, Dr, muR, ...
-                                g, h)
+                                h, g)
     % Unpack state
     p_cg_x  = x(1);
     p_cg_y  = x(2);
@@ -82,16 +82,16 @@ function xdot = halfCarDynamics(x, u, ...
         mu_fx = 0;
         mu_fy = 0;
     else
-        mu_fx = -(s_fx / s_f) * muF;
-        mu_fy = -(s_fy / s_f) * muF;
+        mu_fx = (s_fx / s_f) * muF;
+        mu_fy = (s_fy / s_f) * muF;
     end
 
     if s_r < 1e-6
         mu_rx = 0;
         mu_ry = 0;
     else
-        mu_rx = -(s_rx / s_r) * muR;
-        mu_ry = -(s_ry / s_r) * muR;
+        mu_rx = (s_rx / s_r) * muR;
+        mu_ry = (s_ry / s_r) * muR;
     end
 
     % ---------------------------------------------------------
@@ -101,9 +101,13 @@ function xdot = halfCarDynamics(x, u, ...
     %       F_fz = m*g * (lR / (lF + lR))
     %       F_rz = m*g * (lF / (lF + lR))
     % ---------------------------------------------------------
-    F_fz = m * g * (lR - mu_rx * h) / (lF + lR + h * (mu_fx * cos(delta) - ...
-        mu_fy * sin(delta) - mu_rx));
-    F_rz = m * g - F_fz;
+    % F_fz = m * g * (lR - mu_rx * h) / (lF + lR + h * (mu_fx * cos(delta) - ...
+    %     mu_fy * sin(delta) - mu_rx));
+    % F_rz = m * g - F_fz;
+
+    F_fz = m*g * (lR / (lF + lR));  
+    F_rz = m*g * (lF / (lF + lR));
+
 
     % ---------------------------------------------------------
     % 6) Compute friction forces in tire coordinates
