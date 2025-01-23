@@ -22,22 +22,22 @@ function main()
     m   = 1500;    % [kg]
     Izz = 3000;    % [kg*m^2]
 
-    Bf  = 11.275;  % /rad (front Pacejka B)
-    Cf  = 1.5600;  % front Pacejka C
-    Df  = -0.3365; % front Pacejka D
+    %Bf  = 11.275;  % /rad (front Pacejka B)
+    %Cf  = 1.5600;  % front Pacejka C
+    %Df  = -0.3365; % front Pacejka D
     muF = 0.337;   % front max friction
 
-    Br  = 18.631;  % /rad (rear Pacejka B)
-    Cr  = 1.5600;  % rear Pacejka C
-    Dr  = -0.2477; % rear Pacejka D
+    %Br  = 18.631;  % /rad (rear Pacejka B)
+    %Cr  = 1.5600;  % rear Pacejka C
+    %Dr  = -0.2477; % rear Pacejka D
     muR = 0.248;   % rear max friction
 
     h   = 0.1;     % CG height [m]
     g   = 9.81;    % gravity [m/s^2]
 
     %% 2) Simulation + MPC settings
-    Ts       = 0.01;    % sampling time [s]
-    N        = 40;     % prediction horizon (# steps)
+    Ts       = 0.1;    % sampling time [s]
+    N        = 20;     % prediction horizon (# steps)
     simTime  = 20;      % total simulation time [s]
 
     % Initial state:
@@ -55,8 +55,8 @@ function main()
     [refData, timeVec] = generateTrajectoryData( ...
     Ts, simTime, x_current, ...
     lF, lR, m, Izz, ...
-    Bf, Cf, Df, muF, ...
-    Br, Cr, Dr, muR, ...
+    muF, ...
+    muR, ...
     h, g);
 
 % Now refData is an Nx6 array of feasible states from the same halfCarDynamics.

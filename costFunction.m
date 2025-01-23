@@ -17,7 +17,7 @@ function J = costFunction(X, U, data)
     R = diag([0.5, 0.5, 0.5]);
 
     % Terminal penalty weight (for the final predicted state)
-    Q_terminal = diag([500, 500, 1, 1, 1, 1]);  % Very high penalty on final position
+    Q_terminal = diag([500, 500, 10, 10, 10, 10]);  % Very high penalty on final position
 
     %% Initialize total cost
     J = 0;
