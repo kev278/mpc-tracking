@@ -36,8 +36,8 @@ function main()
     g   = 9.81;    % gravity [m/s^2]
 
     %% 2) Simulation + MPC settings
-    Ts       = 0.1;    % sampling time [s]
-    N        = 20;     % prediction horizon (# steps)
+    Ts       = 0.01;    % sampling time [s]
+    N        = 40;     % prediction horizon (# steps)
     simTime  = 20;      % total simulation time [s]
 
     % Initial state:
@@ -69,8 +69,8 @@ function main()
     f_discrete = @(x, u) rk4_discretization( ...
         @(xx, uu) halfCarDynamics(xx, uu, ...
                                   lF, lR, m, Izz, ...
-                                  Bf, Cf, Df, muF, ...
-                                  Br, Cr, Dr, muR, ...
+                                  muF, ...
+                                  muR, ...
                                   h, g), ...
         x, u, Ts);
 
@@ -82,7 +82,7 @@ function main()
     nlobj = nlmpc(nx, ny, nu);
     nlobj.Ts = Ts;
     nlobj.PredictionHorizon = N;
-    nlobj.ControlHorizon    = N;
+    nlobj.ControlHorizon    = N/5;
     nlobj.Model.IsContinuousTime = false;
 
     % Use the discrete model
