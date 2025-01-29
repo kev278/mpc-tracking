@@ -11,13 +11,13 @@ function J = costFunction(X, U, data)
 
     %% Define Q and R matrices
     % Q: State tracking penalty (position errors get higher weights)
-    Q = diag([50, 50, 1, 1, 1, 1]);  % Higher weights on [p_cg_x, p_cg_y]
+    Q = diag([20, 20, 5, 5, 5, 5]);  % Reduce position penalty. Higher weights on [p_cg_x, p_cg_y]
 
     % R: Input increment penalty (smaller values to allow faster control adjustments)
-    R = diag([0.5, 0.5, 0.5]);
+    R = diag([1, 1, 1]);
 
     % Terminal penalty weight (for the final predicted state)
-    Q_terminal = diag([500, 500, 10, 10, 10, 10]);  % Very high penalty on final position
+    Q_terminal = diag([100, 100, 10, 10, 10, 10]);  % Very high penalty on final position
 
     %% Initialize total cost
     J = 0;

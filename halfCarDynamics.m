@@ -43,7 +43,10 @@ function xdot = halfCarDynamics(x, u, ...
         s_fy = 0;
         s_ry = 0;
     else
-        s_fy = (v_y + lF * psi_dot) * cos(delta) - v_x * sin(delta) / (v_x * cos(delta) + (v_y + lF * psi_dot) * sin(delta));
+        %s_fy = ((v_y + lF * psi_dot) * cos(delta) - v_x * sin(delta)) / (v_x * cos(delta) + (v_y + lF * psi_dot) * sin(delta));
+        s_fy = ((v_y + lF * psi_dot)*cos(delta) - v_x*sin(delta)) / ...
+       (v_x*cos(delta) + (v_y + lF * psi_dot)*sin(delta));
+
         s_ry = (v_y - lR * psi_dot) / v_x;
     end
 

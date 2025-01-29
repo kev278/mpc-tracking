@@ -38,12 +38,12 @@ g   = 9.81;    % gravity [m/s^2]
 
 %% 2) Simulation + MPC settings
 Ts       = 0.1;    % sampling time [s]
-N        = 5;     % prediction horizon (# steps)
-simTime  = 10;      % total simulation time [s]
+N        = 10;     % prediction horizon (# steps)
+simTime  = 20;      % total simulation time [s]
 
 % Initial state:
 %   x = [ p_cg_x; p_cg_y; psi; v_x; v_y; psi_dot ]
-x_current = [0; 0; 0; 0; 0; 0];
+x_current = [0; 0; 0; 0.1; 0; 0];
 
 %% 3) Generate the time-varying reference trajectory
 % We'll assume you have a function generateTrajectoryData(Ts, simTime, lF, lR, <etc>).
@@ -94,29 +94,23 @@ nlobj.Model.OutputFcn = @(x, u) x;  % track all states as outputs
 %10 * sum( (X(end, :) - data.References(end, :)).^2 );
 
 %% 6) Constraints
-nlobj.MV(1).Min = -5;  nlobj.MV(1).Max = 5;   % steering
-nlobj.MV(2).Min = -20;  nlobj.MV(2).Max = 20;   % s_fx
-nlobj.MV(3).Min = -20;  nlobj.MV(3).Max = 20;   % s_rx
+nlobj.MV(1).Min = -5.5;  nlobj.MV(1).Max = 5.5;   % steering
+nlobj.MV(2).Min = -15;  nlobj.MV(2).Max = 15;   % s_fx
+nlobj.MV(3).Min = -15;  nlobj.MV(3).Max = 15;   % s_rx
 
-% % e.g., v_x >= 0, v_y in [-5, 5]
-% nlobj.OV(4).Min = 0;
-% nlobj.OV(5).Min = -100;
-% nlobj.OV(5).Max =  100;
-% 2) No constraints on states
-for i = 1:6
-    nlobj.OV(i).Min = -inf;
-    nlobj.OV(i).Max =  inf;
-end
+% e.g., v_x >= 0, v_y in [-5, 5]
+nlobj.OV(4).Min = 0;
+nlobj.OV(5).Min = -10;
+nlobj.OV(5).Max =  10;
 
 %% 7) Weights
-nlobj.Optimization.CustomCostFcn = [];
-nlobj.Weights.OutputVariables          = [5 5 1 1 1 1]; % or all ones
-nlobj.Weights.ManipulatedVariables     = [1 1 1];
-nlobj.Weights.ManipulatedVariablesRate = [1 1 1];
+% nlobj.Weights.OutputVariables = [5 5 0.1 0.5 0.1 0.1];
+% nlobj.Weights.ManipulatedVariables      = [0.5 0.5 0.5];
+% nlobj.Weights.ManipulatedVariablesRate  = [0.5 0.5 0.5];
 % Turn off built-in cost weights so only CustomCostFcn is used
-% nlobj.Weights.OutputVariables          = zeros(1, ny); % e.g. [0 0 0 0 0 0]
-% nlobj.Weights.ManipulatedVariables     = zeros(1, nu); % e.g. [0 0 0]
-% nlobj.Weights.ManipulatedVariablesRate = zeros(1, nu); % e.g. [0 0 0]
+nlobj.Weights.OutputVariables          = zeros(1, ny); % e.g. [0 0 0 0 0 0]
+nlobj.Weights.ManipulatedVariables     = zeros(1, nu); % e.g. [0 0 0]
+nlobj.Weights.ManipulatedVariablesRate = zeros(1, nu); % e.g. [0 0 0]
 
 
 % Objective Function
