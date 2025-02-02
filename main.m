@@ -37,34 +37,27 @@ h   = 0.1;     % CG height [m]
 g   = 9.81;    % gravity [m/s^2]
 
 %% 2) Simulation + MPC settings
-Ts       = 0.1;    % sampling time [s]
-N        = 5;     % prediction horizon (# steps)
+Ts       = 0.05;    % sampling time [s]
+N        = 15;     % prediction horizon (# steps)
 simTime  = 10;      % total simulation time [s]
 
 % Initial state:
 %   x = [ p_cg_x; p_cg_y; psi; v_x; v_y; psi_dot ]
-x_current = [0; 0; 0; 0; 0; 0];
+x_current = [0; 0; 0.1; 0; 0; 0];
 
 %% 3) Generate the time-varying reference trajectory
-% We'll assume you have a function generateTrajectoryData(Ts, simTime, lF, lR, <etc>).
+% We'll assume you have a function generateTrajectoryData(Ts, simTime, x_current, ...)
 % This function returns:
 %   refData -> Nx6 array of reference states at each discrete step
 %   timeVec -> 1xN time vector
-% 
-% The dimension of refData: (#steps) x 6
-%    where each row is: [p_cg_x, p_cg_y, psi, v_x, v_y, psi_dot]
 [refData, timeVec] = generateTrajectoryData( ...
-Ts, simTime, x_current, ...
-lF, lR, m, Izz, ...
-muF, ...
-muR, ...
-h, g);
+    Ts, simTime, x_current, ...
+    lF, lR, m, Izz, ...
+    muF, ...
+    muR, ...
+    h, g);
 
-% Now refData is an Nx6 array of feasible states from the same halfCarDynamics.
-% You can pass it to your MPC just like before.
 N_total = length(timeVec);
-
-% If needed, verify size(refData) == [N_total, 6].
 
 %% 4) Construct a discrete update function handle (RK4 + halfCarDynamics)
 f_discrete = @(x, u) rk4_discretization( ...
@@ -83,55 +76,39 @@ nu = 3;  % # inputs: [delta, s_fx, s_rx]
 nlobj = nlmpc(nx, ny, nu);
 nlobj.Ts = Ts;
 nlobj.PredictionHorizon = N;
-nlobj.ControlHorizon    = N/5;
+nlobj.ControlHorizon    = round(nlobj.PredictionHorizon/5);
 nlobj.Model.IsContinuousTime = false;
 
 % Use the discrete model
 nlobj.Model.StateFcn  = @(x, u) f_discrete(x, u);
 nlobj.Model.OutputFcn = @(x, u) x;  % track all states as outputs
 
-%nlobj.Optimization.CustomCostFcn = @(X,U,e,data) ...
-%10 * sum( (X(end, :) - data.References(end, :)).^2 );
-
 %% 6) Constraints
-nlobj.MV(1).Min = -5;  nlobj.MV(1).Max = 5;   % steering
-nlobj.MV(2).Min = -20;  nlobj.MV(2).Max = 20;   % s_fx
-nlobj.MV(3).Min = -20;  nlobj.MV(3).Max = 20;   % s_rx
+nlobj.MV(1).Min = -0.3;  nlobj.MV(1).Max = 0.3;   % steering
+nlobj.MV(2).Min = -0.7;  nlobj.MV(2).Max = 0.7;   % s_fx
+nlobj.MV(3).Min = -0.7;  nlobj.MV(3).Max = 0.7;   % s_rx
 
-% % e.g., v_x >= 0, v_y in [-5, 5]
-% nlobj.OV(4).Min = 0;
-% nlobj.OV(5).Min = -100;
-% nlobj.OV(5).Max =  100;
-% 2) No constraints on states
 for i = 1:6
     nlobj.OV(i).Min = -inf;
     nlobj.OV(i).Max =  inf;
 end
 
-%% 7) Weights
-nlobj.Optimization.CustomCostFcn = [];
-nlobj.Weights.OutputVariables          = [5 5 1 1 1 1]; % or all ones
-nlobj.Weights.ManipulatedVariables     = [1 1 1];
-nlobj.Weights.ManipulatedVariablesRate = [1 1 1];
-% Turn off built-in cost weights so only CustomCostFcn is used
-% nlobj.Weights.OutputVariables          = zeros(1, ny); % e.g. [0 0 0 0 0 0]
-% nlobj.Weights.ManipulatedVariables     = zeros(1, nu); % e.g. [0 0 0]
-% nlobj.Weights.ManipulatedVariablesRate = zeros(1, nu); % e.g. [0 0 0]
-
+%% 7) Weights and Custom Cost Function
+nlobj.Weights.OutputVariables          = [1 1 0.5 0.5 0.5 0.5];
+nlobj.Weights.ManipulatedVariables     = [5 5 5];
+nlobj.Weights.ManipulatedVariablesRate = [5 5 5];
 
 % Objective Function
-nlobj.Optimization.CustomCostFcn = @(X,U,e,data) ...
-costFunction(X, U, data);
+nlobj.Optimization.CustomCostFcn = @(X,U,e,data) costFunction(X, U, data);
 nloptions = nlmpcmoveopt;
-%nloptions.Iterations = 500;
-
 
 %% 8) Closed-loop simulation
 xHistory  = x_current;  
 mvHistory = [];
-mv0       = [0.2; 0.2; 0.2];    % initial guess for manipulated variables
+mv0       = [0.05; 0.2; 0.2];    % initial guess for manipulated variables
+u_previous = mv0;               % initialize previous control input
 
-for k = 1 : (N_total - 1)  % step through each sample in timeVec
+for k = 1 :(N_total - 1)  % step through each sample in timeVec
     % 8a) Build the local reference window for the next N steps
     idxEnd = min(k + N - 1, N_total);  % don't exceed final index
     y_ref_k = refData(k+1 : idxEnd, :);  % subarray of size <= N x 6
@@ -147,22 +124,26 @@ for k = 1 : (N_total - 1)  % step through each sample in timeVec
     % 8b) Solve the MPC problem for the current state
     [mv_opt, opt, info] = nlmpcmove(nlobj, x_current, mv0, y_ref_k, [], nloptions);
     disp(info.ExitFlag);  % Displays solver status
-    
-    
 
-    % 8c) Apply the first (optimal) control
-    u_applied = mv_opt;
+    % 8c) Check for solver success: if ExitFlag == 1, use new input; otherwise, use previous input
+    if info.ExitFlag == 1 || info.ExitFlag == 2
+        u_applied = mv_opt;
+        u_previous = mv_opt;  % update the previous control input if successful
+    else
+        disp('Solver did not succeed with ExitFlag 1. Applying previous control input.');
+        u_applied = u_previous;
+    end
 
     % 8d) Discrete-step update of the actual system
     x_next = f_discrete(x_current, u_applied);
 
-    % 8e) Log
+    % 8e) Log data
     xHistory  = [xHistory, x_next];
     mvHistory = [mvHistory, u_applied]; 
 
     % 8f) Prepare for next iteration
     x_current = x_next;
-    mv0 = mv_opt;  % warm start next time
+    mv0 = u_previous;  % warm start for next iteration
 end
 
 %% 9) Plot results
