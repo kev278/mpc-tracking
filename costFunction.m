@@ -14,7 +14,7 @@ function J = costFunction(X, U, data)
     Q = diag([20, 20, 5, 5, 5, 5]);  % Reduce position penalty. Higher weights on [p_cg_x, p_cg_y]
 
     % R: Input increment penalty (smaller values to allow faster control adjustments)
-    R = diag([10, 10, 10]);
+    R = diag([100, 100, 100]);
 
     % Terminal penalty weight (for the final predicted state)
     Q_terminal = diag([1000, 1000, 10, 10, 10, 10]);  % Very high penalty on final position

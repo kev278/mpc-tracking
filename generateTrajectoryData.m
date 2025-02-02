@@ -20,7 +20,7 @@ function [refData, timeVec] = generateTrajectoryData( ...
 
     % 2) Define an **S-curve shape**
     x_ref = linspace(0, 100, N);  % Move forward along x-axis
-    y_ref = 20 * sin(0.02 * x_ref);  % Generate S-shape in y-direction
+    y_ref = 10 * sin(0.02 * x_ref);  % Generate S-shape in y-direction
 
     % 3) Compute heading angle (psi) from trajectory slope
     psi_ref = atan2(diff(y_ref, 1, 2), diff(x_ref, 1, 2));

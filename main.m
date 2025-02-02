@@ -25,20 +25,20 @@ Izz = 3000;    % [kg*m^2]
 %Cf  = 1.5600;  % front Pacejka C
 %Df  = -0.3365; % front Pacejka D
 muF = 0.337;   % front max friction
-muF = 1;
+%muF = 1;
 
 %Br  = 18.631;  % /rad (rear Pacejka B)
 %Cr  = 1.5600;  % rear Pacejka C
 %Dr  = -0.2477; % rear Pacejka D
 muR = 0.248;   % rear max friction
-muR = 1;
+%muR = 1;
 
 h   = 0.1;     % CG height [m]
 g   = 9.81;    % gravity [m/s^2]
 
 %% 2) Simulation + MPC settings
-Ts       = 0.05;    % sampling time [s]
-N        = 15;     % prediction horizon (# steps)
+Ts       = 0.01;    % sampling time [s]
+N        = 20;     % prediction horizon (# steps)
 simTime  = 10;      % total simulation time [s]
 
 % Initial state:
@@ -84,9 +84,9 @@ nlobj.Model.StateFcn  = @(x, u) f_discrete(x, u);
 nlobj.Model.OutputFcn = @(x, u) x;  % track all states as outputs
 
 %% 6) Constraints
-nlobj.MV(1).Min = -0.3;  nlobj.MV(1).Max = 0.3;   % steering
-nlobj.MV(2).Min = -0.7;  nlobj.MV(2).Max = 0.7;   % s_fx
-nlobj.MV(3).Min = -0.7;  nlobj.MV(3).Max = 0.7;   % s_rx
+nlobj.MV(1).Min = -0.5;  nlobj.MV(1).Max = 0.5;   % steering
+nlobj.MV(2).Min = -0.8;  nlobj.MV(2).Max = 0.8;   % s_fx
+nlobj.MV(3).Min = -0.8;  nlobj.MV(3).Max = 0.8;   % s_rx
 
 for i = 1:6
     nlobj.OV(i).Min = -inf;
@@ -130,7 +130,7 @@ for k = 1 :(N_total - 1)  % step through each sample in timeVec
         u_applied = mv_opt;
         u_previous = mv_opt;  % update the previous control input if successful
     else
-        disp('Solver did not succeed with ExitFlag 1. Applying previous control input.');
+        disp('Solver did not succeed with ExitFlag 1 or 2. Applying previous control input.');
         u_applied = u_previous;
     end
 
