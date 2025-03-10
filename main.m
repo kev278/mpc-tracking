@@ -37,8 +37,8 @@ h   = 0.1;     % CG height [m]
 g   = 9.81;    % gravity [m/s^2]
 
 %% 2) Simulation + MPC settings
-Ts       = 0.01;    % sampling time [s]
-N        = 20;     % prediction horizon (# steps)
+Ts       = 0.1;    % sampling time [s]
+N        = 10;     % prediction horizon (# steps)
 simTime  = 10;      % total simulation time [s]
 
 % Initial state:
@@ -84,7 +84,7 @@ nlobj.Model.StateFcn  = @(x, u) f_discrete(x, u);
 nlobj.Model.OutputFcn = @(x, u) x;  % track all states as outputs
 
 %% 6) Constraints
-nlobj.MV(1).Min = -0.5;  nlobj.MV(1).Max = 0.5;   % steering
+nlobj.MV(1).Min = -0.8;  nlobj.MV(1).Max = 0.8;   % steering
 nlobj.MV(2).Min = -0.8;  nlobj.MV(2).Max = 0.8;   % s_fx
 nlobj.MV(3).Min = -0.8;  nlobj.MV(3).Max = 0.8;   % s_rx
 
@@ -95,8 +95,8 @@ end
 
 %% 7) Weights and Custom Cost Function
 nlobj.Weights.OutputVariables          = [1 1 0.5 0.5 0.5 0.5];
-nlobj.Weights.ManipulatedVariables     = [5 5 5];
-nlobj.Weights.ManipulatedVariablesRate = [5 5 5];
+nlobj.Weights.ManipulatedVariables     = [2 2 2];
+nlobj.Weights.ManipulatedVariablesRate = [2 2 2];
 
 % Objective Function
 nlobj.Optimization.CustomCostFcn = @(X,U,e,data) costFunction(X, U, data);
