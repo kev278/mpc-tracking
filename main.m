@@ -39,7 +39,7 @@ g   = 9.81;    % gravity [m/s^2]
 %% 2) Simulation + MPC settings
 Ts       = 0.1;    % sampling time [s]
 N        = 10;     % prediction horizon (# steps)
-simTime  = 10;      % total simulation time [s]
+simTime  = 20;      % total simulation time [s]
 
 % Initial state:
 %   x = [ p_cg_x; p_cg_y; psi; v_x; v_y; psi_dot ]
@@ -95,8 +95,8 @@ end
 
 %% 7) Weights and Custom Cost Function
 nlobj.Weights.OutputVariables          = [1 1 0.5 0.5 0.5 0.5];
-nlobj.Weights.ManipulatedVariables     = [2 2 2];
-nlobj.Weights.ManipulatedVariablesRate = [2 2 2];
+nlobj.Weights.ManipulatedVariables     = [1 1 1];
+nlobj.Weights.ManipulatedVariablesRate = [1 1 1];
 
 % Objective Function
 nlobj.Optimization.CustomCostFcn = @(X,U,e,data) costFunction(X, U, data);
@@ -105,7 +105,7 @@ nloptions = nlmpcmoveopt;
 %% 8) Closed-loop simulation
 xHistory  = x_current;  
 mvHistory = [];
-mv0       = [0.05; 0.2; 0.2];    % initial guess for manipulated variables
+mv0       = [0.05; 0.6; 0.6];    % initial guess for manipulated variables
 u_previous = mv0;               % initialize previous control input
 
 for k = 1 :(N_total - 1)  % step through each sample in timeVec
@@ -132,6 +132,7 @@ for k = 1 :(N_total - 1)  % step through each sample in timeVec
     else
         disp('Solver did not succeed with ExitFlag 1 or 2. Applying previous control input.');
         u_applied = u_previous;
+        %u_applied = [0; 0; 0];
     end
 
     % 8d) Discrete-step update of the actual system

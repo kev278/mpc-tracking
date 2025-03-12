@@ -19,7 +19,7 @@ function [refData, timeVec] = generateTrajectoryData( ...
     N       = length(timeVec);
 
     % 2) Define an **S-curve shape**
-    x_ref = linspace(0, 100, N);  % Move forward along x-axis
+    x_ref = linspace(0, 200, N);  % Move forward along x-axis
     y_ref = 10 * sin(0.02 * x_ref);  % Generate S-shape in y-direction
 
     % 3) Compute heading angle (psi) from trajectory slope
@@ -27,7 +27,7 @@ function [refData, timeVec] = generateTrajectoryData( ...
     psi_ref = [psi_ref, psi_ref(end)];  % Repeat last value to maintain size
 
     % 4) Define a **slow velocity profile**
-    vProfile = 0.1 * ones(1, N);  % Move at a constant slow speed (0.5 m/s)
+    vProfile = 0.05 * ones(1, N);  % Move at a constant slow speed (0.5 m/s)
 
     % 5) Build reference data
     refData = zeros(N, 6);
