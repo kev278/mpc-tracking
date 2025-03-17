@@ -24,21 +24,21 @@ Izz = 3000;    % [kg*m^2]
 %Bf  = 11.275;  % /rad (front Pacejka B)
 %Cf  = 1.5600;  % front Pacejka C
 %Df  = -0.3365; % front Pacejka D
-%muF = 0.337;   % front max friction
-muF = 0.7;
+muF = 0.337;   % front max friction
+%muF = 1;
 
 %Br  = 18.631;  % /rad (rear Pacejka B)
 %Cr  = 1.5600;  % rear Pacejka C
 %Dr  = -0.2477; % rear Pacejka D
-%muR = 0.248;   % rear max friction
-muR = 0.7;
+muR = 0.248;   % rear max friction
+%muR = 1;
 
 h   = 0.1;     % CG height [m]
 g   = 9.81;    % gravity [m/s^2]
 
 %% 2) Simulation + MPC settings
 Ts       = 0.1;    % sampling time [s]
-N        = 5;     % prediction horizon (# steps)
+N        = 10;     % prediction horizon (# steps)
 simTime  = 20;      % total simulation time [s]
 
 % Initial state:
@@ -56,8 +56,6 @@ x_current = [0; 0; 0.1; 0; 0; 0];
     muF, ...
     muR, ...
     h, g);
-% Use only x and y positions for tracking:
-refData = refData(:, 1:2);
 
 N_total = length(timeVec);
 
@@ -71,9 +69,10 @@ f_discrete = @(x, u) rk4_discretization( ...
     x, u, Ts);
 
 %% 5) Nonlinear MPC object
-nx = 6;  % number of states remains 6
-ny = 2;  % now we only track x and y
-nu = 3;
+nx = 6;  % # states
+ny = 6;  % # outputs (we track all states)
+nu = 3;  % # inputs: [delta, s_fx, s_rx]
+
 nlobj = nlmpc(nx, ny, nu);
 nlobj.Ts = Ts;
 nlobj.PredictionHorizon = N;
@@ -82,24 +81,22 @@ nlobj.Model.IsContinuousTime = false;
 
 % Use the discrete model
 nlobj.Model.StateFcn  = @(x, u) f_discrete(x, u);
-
-% Return only x (position) and y (position)
-nlobj.Model.OutputFcn = @(x, u) x(1:2);  
+nlobj.Model.OutputFcn = @(x, u) x;  % track all states as outputs
 
 %% 6) Constraints
 nlobj.MV(1).Min = -0.8;  nlobj.MV(1).Max = 0.8;   % steering
 nlobj.MV(2).Min = -0.8;  nlobj.MV(2).Max = 0.8;   % s_fx
 nlobj.MV(3).Min = -0.8;  nlobj.MV(3).Max = 0.8;   % s_rx
 
-for i = 1:2
+for i = 1:6
     nlobj.OV(i).Min = -inf;
     nlobj.OV(i).Max =  inf;
 end
 
 %% 7) Weights and Custom Cost Function
-nlobj.Weights.OutputVariables = [1 1];
-nlobj.Weights.ManipulatedVariables     = [5 5 5];
-nlobj.Weights.ManipulatedVariablesRate = [5 5 5];
+nlobj.Weights.OutputVariables          = [1 1 0.5 0.5 0.5 0.5];
+nlobj.Weights.ManipulatedVariables     = [1 1 1];
+nlobj.Weights.ManipulatedVariablesRate = [1 1 1];
 
 % Objective Function
 nlobj.Optimization.CustomCostFcn = @(X,U,e,data) costFunction(X, U, data);
@@ -134,7 +131,7 @@ for k = 1 :(N_total - 1)  % step through each sample in timeVec
         u_previous = mv_opt;  % update the previous control input if successful
     else
         disp('Solver did not succeed with ExitFlag 1 or 2. Applying previous control input.');
-        u_applied = 1 * u_previous;
+        u_applied = u_previous;
         %u_applied = [0; 0; 0];
     end
 

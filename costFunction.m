@@ -1,46 +1,33 @@
 function J = costFunction(X, U, data)
-    % Custom cost function for nonlinear MPC
-    %
-    % Inputs:
-    %   - X: (N_p+1)-by-nx predicted states
-    %   - U: N_c-by-nu predicted inputs
-    %   - data.References: (N_p+1)-by-ny reference outputs
-    %
-    % Output:
-    %   - J: Total cost for the prediction horizon
+    % Custom cost function for tracking only x and y
 
-    %% Define Q and R matrices
-    % Q: State tracking penalty (position errors get higher weights)
-    Q = diag([20, 20, 5, 5, 5, 5]);  % Reduce position penalty. Higher weights on [p_cg_x, p_cg_y]
+    % Q: Tracking penalty for x and y only
+    Q = diag([100, 100]); 
 
-    % R: Input increment penalty (smaller values to allow faster control adjustments)
-    R = diag([10, 10, 10]);
+    % R: Input change penalty remains unchanged
+    R = diag([20, 10, 10]);
 
-    % Terminal penalty weight (for the final predicted state)
-    Q_terminal = diag([10, 10, 1, 1, 1, 1]);  % Very high penalty on final position
+    % Terminal cost penalty for x and y only
+    Q_terminal = diag([50, 50]);
 
-    %% Initialize total cost
     J = 0;
-
-    %% Get the number of prediction steps and references
-    Npred = size(X, 1);           % N_p + 1 predicted states
+    Npred = size(X, 1);
     Nref  = size(data.References, 1);
-    Ncommon = min(Npred, Nref);   % Ensure we don't exceed array bounds
+    Ncommon = min(Npred, Nref);
 
-    %% 1) Sum of state tracking errors over the prediction horizon
-    for k = 2 : Ncommon
-        dx = X(k, :) - data.References(k, :);
-        J = J + dx * Q * dx';  % Quadratic state error term
+    % 1) State tracking cost (only use x and y)
+    for k = 2:Ncommon
+        dx = X(k, 1:2) - data.References(k, :);
+        J = J + dx * Q * dx';
     end
 
-    %% 2) Sum of input increment penalties
-    for k = 2 : size(U, 1)
+    % 2) Input increment cost (unchanged)
+    for k = 2:size(U, 1)
         dU = U(k, :) - U(k-1, :);
-        J = J + dU * R * dU';  % Quadratic input change term
+        J = J + dU * R * dU';
     end
 
-    %% 3) Terminal state penalty (for the final predicted state)
-    % Apply a high penalty to the final predicted state deviation
-    dx_terminal = X(end, :) - data.References(end, :);
-    J = J + dx_terminal * Q_terminal * dx_terminal';  % Quadratic terminal cost
+    % 3) Terminal cost for x and y
+    dx_terminal = X(end, 1:2) - data.References(end, :);
+    J = J + dx_terminal * Q_terminal * dx_terminal';
 end
