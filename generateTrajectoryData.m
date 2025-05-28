@@ -1,39 +1,21 @@
-function [refData, timeVec] = generateTrajectoryData( ...
-                    Ts, simTime, x0, ...
-                    lF, lR, m, Izz, ...
-                    muF, ...
-                    muR, ...
-                    h, g)
-% generateTrajectoryData_S_Curve
-% -------------------------------------------------------------------------
-% Creates a **slow-moving S-curve trajectory** for more natural car-like motion.
-%
-% OUTPUTS:
-%   refData  - (N x 6) array of reference states at each time step
-%              [ p_cg_x, p_cg_y, psi, v_x, v_y, psi_dot ]
-%   timeVec  - 1 x N vector of time stamps
-% -------------------------------------------------------------------------
+function [refData, v_des, timeVec] = generateTrajectoryData(Ts, simTime, x0, lF, lR, m, Izz, muF, muR, h, g)
+    % Generate a 2D S-curve trajectory with a desired velocity profile.
+    %
+    % Outputs:
+    %   refData - [N x 2] array with x-y positions
+    %   v_des   - [N x 1] desired forward velocity (m/s)
+    %   timeVec - 1 x N time stamps
 
-    % 1) Create a time vector
-    timeVec = 0 : Ts : simTime;
-    N       = length(timeVec);
-
-    % 2) Define an **S-curve shape**
-    x_ref = linspace(0, 200, N);  % Move forward along x-axis
-    y_ref = 10 * sin(0.02 * x_ref);  % Generate S-shape in y-direction
-
-    % 3) Compute heading angle (psi) from trajectory slope
-    psi_ref = atan2(diff(y_ref, 1, 2), diff(x_ref, 1, 2));
-    psi_ref = [psi_ref, psi_ref(end)];  % Repeat last value to maintain size
-
-    % 4) Define a **slow velocity profile**
-    vProfile = 0.05 * ones(1, N);  % Move at a constant slow speed (0.5 m/s)
-
-    % 5) Build reference data
-    refData = zeros(N, 6);
-    refData(:,1) = x_ref;  % p_cg_x
-    refData(:,2) = y_ref;  % p_cg_y
-    refData(:,3) = psi_ref;  % psi (heading)
-    refData(:,4) = vProfile;  % v_x (slow constant speed)
+    timeVec = 0:Ts:simTime;
+    N = length(timeVec);
     
+    % S-curve in x-y:
+    x_ref = linspace(0, 200, N);          % x from 0 to 200 m
+    y_ref = 10 * sin(0.02 * x_ref);         % S-shaped y trajectory
+    
+    % Desired forward velocity (e.g., constant 0.5 m/s)
+    v_des = 0.5 * ones(N, 1);
+    
+    % Only x-y positions are used for tracking
+    refData = [x_ref', y_ref'];
 end

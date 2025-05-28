@@ -104,12 +104,12 @@ function xdot = halfCarDynamics(x, u, ...
     %       F_fz = m*g * (lR / (lF + lR))
     %       F_rz = m*g * (lF / (lF + lR))
     % ---------------------------------------------------------
-    %F_fz = m * g * (lR - mu_rx * h) / (lF + lR + h * (mu_fx * cos(delta) - ...
-    %    mu_fy * sin(delta) - mu_rx));
-    %F_rz = m * g - F_fz;
+    F_fz = m * g * (lR - mu_rx * h) / (lF + lR + h * (mu_fx * cos(delta) - ...
+        mu_fy * sin(delta) - mu_rx));
+    F_rz = m * g - F_fz;
 
-    F_fz = m*g * (lR / (lF + lR));  
-    F_rz = m*g * (lF / (lF + lR));
+    %F_fz = m*g * (lR / (lF + lR));  
+    %F_rz = m*g * (lF / (lF + lR));
 
 
     % ---------------------------------------------------------

@@ -1,33 +1,53 @@
 function J = costFunction(X, U, data)
-    % Custom cost function for tracking only x and y
-
-    % Q: Tracking penalty for x and y only
-    Q = diag([100, 100]); 
-
-    % R: Input change penalty remains unchanged
-    R = diag([20, 10, 10]);
-
-    % Terminal cost penalty for x and y only
-    Q_terminal = diag([50, 50]);
-
+    % Custom cost function for 2D trajectory tracking with desired velocity.
+    %
+    % X: Predicted state trajectory (N x 6)
+    % U: Predicted control inputs (N x 3)
+    % data: Structure containing:
+    %       - data.References: [N x 2] numeric reference for x-y positions
+    %       - data.CustomData.v_des: [N x 1] desired forward velocity
+    
+    % Define weights
+    Q_pos         = diag([200, 200]);  % Position tracking (x-y)
+    Q_vel         = 50;                % Velocity tracking weight
+    R_abs         = diag([5, 5, 5]);     % Control effort penalty
+    R_rate        = diag([10, 10, 10]);  % Control increment penalty
+    Q_terminal    = diag([250, 250]);    % Terminal position penalty
+    Q_terminalVel = 50;                % Terminal velocity penalty
+    
     J = 0;
     Npred = size(X, 1);
-    Nref  = size(data.References, 1);
-    Ncommon = min(Npred, Nref);
+    
+    % Position reference from data (should be a numeric array of size [Npred x 2])
+    refPos = data.References;
+    
+    % Desired velocity from CustomData (size [Npred x 1])
+    global v_des_horizon_global;
+    v_des = v_des_horizon_global;
 
-    % 1) State tracking cost (only use x and y)
-    for k = 2:Ncommon
-        dx = X(k, 1:2) - data.References(k, :);
-        J = J + dx * Q * dx';
+    
+    % Tracking cost: for each prediction step (starting at k = 2)
+    for k = 2:Npred
+        pos_error = X(k, 1:2) - refPos(k, :);
+        vel_error = X(k, 4) - v_des(k);
+        J = J + pos_error * Q_pos * pos_error' + (vel_error)^2 * Q_vel;
     end
-
-    % 2) Input increment cost (unchanged)
+    
+    % Control effort cost
+    for k = 1:size(U, 1)
+        J = J + U(k, :) * R_abs * U(k, :)';
+    end
+    
+    % Control rate cost (starting from second control input)
+    U_prev = U(1, :);
     for k = 2:size(U, 1)
-        dU = U(k, :) - U(k-1, :);
-        J = J + dU * R * dU';
+        dU = U(k, :) - U_prev;
+        J = J + dU * R_rate * dU';
+        U_prev = U(k, :);
     end
-
-    % 3) Terminal cost for x and y
-    dx_terminal = X(end, 1:2) - data.References(end, :);
-    J = J + dx_terminal * Q_terminal * dx_terminal';
+    
+    % Terminal cost
+    pos_terminal_error = X(end, 1:2) - refPos(end, :);
+    vel_terminal_error = X(end, 4) - v_des(end);
+    J = J + pos_terminal_error * Q_terminal * pos_terminal_error' + (vel_terminal_error)^2 * Q_terminalVel;
 end
